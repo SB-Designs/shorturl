@@ -3,12 +3,17 @@ import { NextResponse } from 'next/server';
 export async function middleware(request) {
   const { pathname } = new URL(request.url);
   if (pathname === '/' || pathname.startsWith('/api') || pathname.includes('.')) return;
+
   const slug = pathname.slice(1);
 
-  const resp = await fetch('https://YOUR_PROJECT_ID.supabase.co/rest/v1/urls?short=eq.' + slug, {
+  // Access environment variables directly
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/urls?short=eq.${slug}`, {
     headers: {
-      'apikey': 'YOUR_SECRET_ANON_KEY',
-      'Authorization': 'Bearer YOUR_SECRET_ANON_KEY'
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     },
   });
   const data = await resp.json();
