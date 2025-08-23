@@ -2,9 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>URL Shortener</title>
-  <link rel="stylesheet" href="/src/style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Modern URL Shortener</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+    }
+    .container {
+      background: #222;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.2);
+      width: 100%;
+      max-width: 400px;
+    }
+    input, button {
+      width: 100%;
+      padding: 0.7rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+    button {
+      background: #00eaff;
+      color: #111;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    button:hover {
+      background: #00c7d4;
+    }
+    #result {
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      word-break: break-all;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -15,6 +57,57 @@
     </form>
     <div id="result"></div>
   </div>
-  <script src="/src/app.js"></script>
+
+  <script>
+    // These will be replaced or injected via your deployment environment
+    const SUPABASE_URL = '__SUPABASE_URL__';  // e.g. https://xyz.supabase.co
+    const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+    const TABLE_NAME = 'urls';
+
+    function generateShort(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return result;
+    }
+
+    async function saveUrl(longUrl) {
+      const short = generateShort();
+      const resp = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({ long: longUrl, short }),
+      });
+      const data = await resp.json();
+      if (data && data[0]) {
+        return data;
+      } else {
+        throw new Error('Failed to shorten URL');
+      }
+    }
+
+    document.getElementById('shortener-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const urlInput = document.getElementById('long-url');
+      const longUrl = urlInput.value.trim();
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Working...';
+
+      try {
+        const { short } = await saveUrl(longUrl);
+        const shortUrl = `${window.location.origin}/${short}`;
+        resultDiv.innerHTML = `Short URL: <a href="${shortUrl}" target="_blank">${shortUrl}</a>`;
+      } catch (err) {
+        resultDiv.textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
 </body>
 </html>
